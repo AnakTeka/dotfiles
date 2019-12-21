@@ -270,7 +270,7 @@ bindsym Print --release exec "maim | xclip -selection clipboard -t image/png"
 # select screen
 bindsym Shift+Print exec "maim -s | xclip -selection clipboard -t image/png"
 # active window ALT + Prtsc
-bindsym --release Mod1+Print exec "maim -i $(xdotool getactivewindow) | xclip -selection clipboard -t image/png"
+bindsym Mod1+Sys_Req --release exec "maim -i $(xdotool getactivewindow) | xclip -selection clipboard -t image/png"
 
 # Scratchpad keys
 bindsym $mod+Shift+minus move scratchpad
