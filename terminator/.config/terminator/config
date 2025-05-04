@@ -1,0 +1,68 @@
+[global_config]
+  enabled_plugins = TerminatorThemes, LaunchpadCodeURLHandler, APTURLHandler, LaunchpadBugURLHandler
+[keybindings]
+[profiles]
+  [[default]]
+    icon_bell = False
+    background_darkness = 0.95
+    background_type = transparent
+    cursor_blink = False
+    font = Source Code Pro 10
+    show_titlebar = False
+    scrollback_infinite = True
+    copy_on_selection = True
+  [[DimmedMonokai]]
+    background_color = "#1f1f1f"
+    foreground_color = "#b9bcba"
+    palette = "#3a3d43:#be3f48:#879a3b:#c5a635:#4f76a1:#855c8d:#578fa4:#b9bcba:#888987:#fb001f:#0f722f:#c47033:#186de3:#fb0067:#2e706d:#fdffb9"
+  [[MaterialDark]]
+    background_color = "#232322"
+    foreground_color = "#e5e5e5"
+    palette = "#212121:#b7141f:#457b24:#f6981e:#134eb2:#560088:#0e717c:#efefef:#424242:#e83b3f:#7aba3a:#ffea2e:#54a4f3:#aa4dbc:#26bbd1:#d9d9d9"
+  [[Molokai]]
+    background_color = "#121212"
+    foreground_color = "#bbbbbb"
+    palette = "#121212:#fa2573:#98e123:#dfd460:#1080d0:#8700ff:#43a8d0:#bbbbbb:#555555:#f6669d:#b1e05f:#fff26d:#00afff:#af87ff:#51ceff:#ffffff"
+  [[Monokai Soda]]
+    background_color = "#dfdbc3"
+    foreground_color = "#3b2322"
+    palette = "#000000:#cc0000:#009600:#d06b00:#0000cc:#cc00cc:#0087cc:#cccccc:#808080:#cc0000:#009600:#d06b00:#0000cc:#cc00cc:#0087cc:#ffffff"
+  [[Novel]]
+  [[Ocean dark]]
+    background_color = "#1c1f27"
+    foreground_color = "#979cac"
+    palette = "#4F4F4F:#AF4B57:#AFD383:#E5C079:#7D90A4:#A4799D:#85A6A5:#EEEDEE:#7B7B7B:#AF4B57:#CEFFAB:#FFFECC:#B5DCFE:#FB9BFE:#DFDFFD:#FEFFFE"
+  [[OneHalfDark]]
+    background_color = "#282c34"
+    foreground_color = "#dcdfe4"
+    palette = "#282c34:#e06c75:#98c379:#e5c07b:#61afef:#c678dd:#56b6c2:#dcdfe4:#282c34:#e06c75:#98c379:#e5c07b:#61afef:#c678dd:#56b6c2:#dcdfe4"
+  [[Panda]]
+    icon_bell = False
+    background_color = "#292a2b"
+    background_darkness = 0.95
+    background_type = transparent
+    cursor_blink = False
+    cursor_shape = ibeam
+    font = Source Code Pro 12
+    foreground_color = "#e6e6e6"
+    show_titlebar = False
+    scrollback_infinite = True
+    palette = "#676b79:#ff2c6d:#19f9d8:#ffb86c:#45a9f9:#b084eb:#6fc1ff:#d3d7cf:#676b79:#ff9ac1:#19f9d8:#ffcc95:#45a9f9:#b084eb:#6fc1ff:#eeeeec"
+    use_system_font = False
+    copy_on_selection = True
+  [[Solarized Dark - Patched]]
+    background_color = "#001e27"
+    foreground_color = "#708284"
+    palette = "#002831:#d11c24:#738a05:#a57706:#2176c7:#c61c6f:#259286:#eae3cb:#475b62:#bd3613:#475b62:#536870:#708284:#5956ba:#819090:#fcf4dc"
+  [[Symfonic]]
+    foreground_color = "#ffffff"
+    palette = "#000000:#dc322f:#56db3a:#ff8400:#0084d4:#b729d9:#ccccff:#ffffff:#1b1d21:#dc322f:#56db3a:#ff8400:#0084d4:#b729d9:#ccccff:#ffffff"
+[layouts]
+  [[default]]
+    [[[child1]]]
+      parent = window0
+      type = Terminal
+    [[[window0]]]
+      parent = ""
+      type = Window
+[plugins]
