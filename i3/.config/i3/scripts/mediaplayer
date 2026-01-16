@@ -35,6 +35,17 @@ my $player_arg = "";
 
 if ($BLOCK_INSTANCE) {
     $player_arg = "--player='$BLOCK_INSTANCE'";
+} else {
+    # Auto-detect: prefer a player that is currently "Playing"
+    my @players = split(/\n/, qx(playerctl -l 2>/dev/null));
+    for my $p (@players) {
+        my $status = qx(playerctl -p '$p' status 2>/dev/null);
+        chomp $status;
+        if ($status eq 'Playing') {
+            $player_arg = "--player='$p'";
+            last;
+        }
+    }
 }
 
 sub buttons {
@@ -138,7 +149,7 @@ sub playerctl {
     buttons('playerctl');  # I'm retaining this line, as it was in your original code. Remove if unnecessary.
 
     # Retrieve the playback status (playing, paused, etc.)
-    my $status = qx(playerctl status 2>/dev/null);
+    my $status = qx(playerctl $player_arg status 2>/dev/null);
     chomp $status;
 
     # exit status will be nonzero when playerctl cannot find your player
