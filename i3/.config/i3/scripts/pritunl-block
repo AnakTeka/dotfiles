@@ -89,6 +89,12 @@ toggle_profile() {
     local output
     output=$(pritunl-client list 2>/dev/null) || return 1
 
+    # Check if profile exists
+    if ! echo "$output" | grep -qE "^\| *$profile"; then
+        notify "VPN" "Profile $profile not found"
+        return 1
+    fi
+
     # Check if this profile is active
     if echo "$output" | grep -E "^\| *$profile" | grep -q "Active"; then
         stop_profile "$profile"
