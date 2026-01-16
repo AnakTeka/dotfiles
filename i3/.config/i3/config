@@ -37,8 +37,6 @@ exec --no-startup-id xss-lock --transfer-sleep-lock -- i3lock --nofork
 # and nm-applet is a desktop environment-independent system tray GUI for it.
 exec --no-startup-id nm-applet
 
-exec --no-startup-id xrandr --output DP-0 --mode 2560x1440 --rate 165
-
 exec --no-startup-id blueman-applet &
 
 exec --no-startup-id "/opt/enpass/Enpass -minimize"
@@ -52,15 +50,13 @@ exec --no-startup-id "/opt/enpass/Enpass -minimize"
 # use gnome polkit
 exec --no-startup-id /usr/lib/polkit-gnome/polkit-gnome-authentication-agent-1 &
 
-exec_always /usr/bin/feh -x --bg-scale '/home/yoga/Pictures/el20rjvyc4ka1.png'
-
-
 # Use pactl to adjust volume in PulseAudio.
 # set $refresh_i3status killall -SIGUSR1 i3blocks
 set $refresh_i3status pkill -RTMIN+10 i3blocks
 bindsym XF86AudioRaiseVolume exec --no-startup-id pactl set-sink-volume @DEFAULT_SINK@ +10% && $refresh_i3status
 bindsym XF86AudioLowerVolume exec --no-startup-id pactl set-sink-volume @DEFAULT_SINK@ -10% && $refresh_i3status
 bindsym $mod+Prior exec --no-startup-id pactl set-sink-mute @DEFAULT_SINK@ toggle && $refresh_i3status
+bindsym XF86AudioMute exec --no-startup-id pactl set-sink-mute @DEFAULT_SINK@ toggle && $refresh_i3status
 bindsym XF86AudioMicMute exec --no-startup-id pactl set-source-mute @DEFAULT_SOURCE@ toggle && $refresh_i3status
 bindsym $mod+Next exec --no-startup-id playerctl play-pause && $refresh_i3status
 
@@ -245,7 +241,8 @@ assign [class="vlc"] $ws4
 assign [class="zoom"] $ws5
 assign [class="looking-glass-client"] $ws8
 
-bindsym XF86ScreenSaver exec --no-startup-id "/home/yoga/opt/bin/arandr"
+bindsym XF86ScreenSaver exec --no-startup-id arandr
+bindsym XF86Display exec --no-startup-id arandr
 #
 # entire screen
 bindsym Print --release exec "maim -o | xclip -selection clipboard -t image/png"
@@ -275,6 +272,7 @@ bindsym $mod+minus scratchpad show
 # Enable Floating Mode for Specific Programs
 for_window [class="Arandr"] floating enable border normal 1 resize set 800px 500px
 for_window [class="Enpass"] floating enable border normal 1 resize set 800px 500px
+for_window [title="Pritunl Client"] floating enable border normal 1 resize set 800px 500px
 for_window [class="Pavucontrol" instance="pavucontrol"] floating enable
 for_window [class="^custom-float-no-border$"] floating enable
 for_window [class="^custom-float-no-border$"] border pixel 0
@@ -349,3 +347,6 @@ strip_workspace_numbers yes
 		urgent_workspace	$urgentred	    	$urgentred	$white		$purple
 	}
 }
+
+# Machine-specific configuration
+include ~/.config/i3/config.local

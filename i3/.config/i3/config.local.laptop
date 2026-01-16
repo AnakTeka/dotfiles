@@ -1,0 +1,13 @@
+# Laptop-specific i3 configuration
+
+# Touchpad tapping
+exec --no-startup-id xinput set-prop "ELAN067D:00 04F3:3209 Touchpad" "libinput Tapping Enabled" 1
+
+# Power management
+exec --no-startup-id mate-power-manager
+
+# Auto suspend after 30 minutes of inactivity
+exec --no-startup-id xidlehook --timer 1800 'systemctl suspend' ''
+
+# Wallpaper
+exec_always /usr/bin/feh --bg-scale ~/Pictures/wallpaper.png

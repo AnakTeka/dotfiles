@@ -1,0 +1,7 @@
+# PC-specific i3 configuration
+
+# Display setup
+exec --no-startup-id xrandr --output DP-0 --mode 2560x1440 --rate 165
+
+# Wallpaper
+exec_always /usr/bin/feh --bg-scale ~/Pictures/wallpaper.png

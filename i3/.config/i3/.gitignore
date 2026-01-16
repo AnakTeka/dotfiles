@@ -1,0 +1,2 @@
+# Machine-specific config (symlinked from config.local.pc or config.local.laptop)
+config.local
