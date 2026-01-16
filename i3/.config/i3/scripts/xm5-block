@@ -24,9 +24,9 @@ get_status() {
 
 # Handle clicks
 case "${BLOCK_BUTTON:-0}" in
-  1) xm5-toggle >/dev/null 2>&1 || true ;;
-  3) xm5-toggle ldac >/dev/null 2>&1 || true ;;
-  2) xm5-toggle msbc >/dev/null 2>&1 || true ;;
+  1) ~/.local/bin/xm5-toggle >/dev/null 2>&1 || true ;;
+  3) ~/.local/bin/xm5-toggle ldac >/dev/null 2>&1 || true ;;
+  2) ~/.local/bin/xm5-toggle msbc >/dev/null 2>&1 || true ;;
 esac
 
 # If not running persistently, just print once and exit
