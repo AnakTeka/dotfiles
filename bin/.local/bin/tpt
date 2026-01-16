@@ -1,15 +1,27 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# tpt: copy current dir (no args) or the absolute path of the first arg to the X11 clipboard
+# Ensure we can talk to X11 even from non-interactive shells (e.g., Jupyter)
+if [[ -z "${DISPLAY:-}" ]]; then
+  [[ -e /tmp/.X11-unix/X0 ]] && export DISPLAY=:0
+fi
+if [[ -z "${XAUTHORITY:-}" ]]; then
+  [[ -f "$HOME/.Xauthority" ]] && export XAUTHORITY="$HOME/.Xauthority"
+fi
 
 if [[ $# -eq 0 ]]; then
   path="$PWD"
 else
-  # realpath resolves to an absolute path; handles spaces safely
-  path="$(realpath -- "$1")" || { echo "Not found: $1" >&2; exit 1; }
+  # Fail loudly if the path doesn't resolve
+  if ! path="$(realpath -- "$1")"; then
+    echo "Not found or cannot resolve: $1" >&2
+    exit 1
+  fi
 fi
 
-# No trailing newline
+# Copy without trailing newline
 printf '%s' "$path" | xclip -selection clipboard
+
+# Echo so you see something in Jupyter output
+echo "copied to clipboard: $path"
 
