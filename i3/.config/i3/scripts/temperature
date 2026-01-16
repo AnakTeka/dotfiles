@@ -3,15 +3,17 @@
 
 T_WARN=${T_WARN:-70}
 T_CRIT=${T_CRIT:-90}
-SENSOR_CHIP=${SENSOR_CHIP:-k10temp}
-SENSOR_CHIP="${SENSOR_CHIP%%-pci-*}"
 
-# Find hwmon path by name
-for hwmon in /sys/class/hwmon/hwmon*/; do
-    if [[ "$(cat "${hwmon}name" 2>/dev/null)" == "$SENSOR_CHIP" ]]; then
-        HWMON_PATH="$hwmon"
-        break
-    fi
+# Auto-detect CPU temperature sensor (AMD k10temp, Intel coretemp)
+SENSORS=(k10temp coretemp)
+
+for sensor in "${SENSORS[@]}"; do
+    for hwmon in /sys/class/hwmon/hwmon*/; do
+        if [[ "$(cat "${hwmon}name" 2>/dev/null)" == "$sensor" ]]; then
+            HWMON_PATH="$hwmon"
+            break 2
+        fi
+    done
 done
 
 if [[ -z "$HWMON_PATH" ]]; then
