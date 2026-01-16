@@ -71,6 +71,9 @@ bindsym $mod+Next exec --no-startup-id playerctl play-pause && $refresh_i3status
 # notification service
 exec --no-startup-id /usr/bin/dunst
 
+# audio subscribe daemon for i3blocks
+exec --no-startup-id ~/.config/i3/scripts/volume-pipewire-subscribe.sh
+
 # dont turn off screen automatically
 # exec --no-startup-id /home/yoga/personal/scripts/turn_off_xset.sh
 

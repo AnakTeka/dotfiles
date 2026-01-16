@@ -1,86 +1,54 @@
-#!/usr/bin/env perl
-# Copyright 2014 Pierre Mavro <deimos@deimos.fr>
-# Copyright 2014 Vivien Didelot <vivien@didelot.org>
-# Copyright 2014 Andreas Guldstrand <andreas.guldstrand@gmail.com>
-# Copyright 2014 Benjamin Chretien <chretien at lirmm dot fr>
+#!/usr/bin/env bash
+# Lightweight temperature script - reads directly from sysfs
 
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
+T_WARN=${T_WARN:-70}
+T_CRIT=${T_CRIT:-90}
+SENSOR_CHIP=${SENSOR_CHIP:-k10temp}
+SENSOR_CHIP="${SENSOR_CHIP%%-pci-*}"
 
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
+# Find hwmon path by name
+for hwmon in /sys/class/hwmon/hwmon*/; do
+    if [[ "$(cat "${hwmon}name" 2>/dev/null)" == "$SENSOR_CHIP" ]]; then
+        HWMON_PATH="$hwmon"
+        break
+    fi
+done
 
-# You should have received a copy of the GNU General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
-#
-# Edited by Andreas Lindlbauer <endeavouros.mousily@aleeas.com>
+if [[ -z "$HWMON_PATH" ]]; then
+    echo "? °C"
+    echo "? °C"
+    exit 0
+fi
 
-use strict;
-use warnings;
-use utf8;
-use Getopt::Long;
+temp_raw=$(cat "${HWMON_PATH}temp1_input" 2>/dev/null)
+temp=$((temp_raw / 1000))
 
-binmode(STDOUT, ":utf8");
+ICON_EMPTY=$''
+ICON_QUARTER=$''
+ICON_HALF=$''
+ICON_THREE=$''
+ICON_FULL=$''
 
-# default values
-my $t_warn = $ENV{T_WARN} || 70;
-my $t_crit = $ENV{T_CRIT} || 90;
-my $chip = $ENV{SENSOR_CHIP} || "";
-my $temperature = -9999;
-my $label = "😀 ";
+if ((temp < 45)); then
+    label="$ICON_EMPTY"
+elif ((temp < 55)); then
+    label="$ICON_QUARTER"
+elif ((temp < 65)); then
+    label="$ICON_HALF"
+elif ((temp < 75)); then
+    label="$ICON_THREE"
+else
+    label="$ICON_FULL"
+fi
 
-sub help {
-    print "Usage: temperature [-w <warning>] [-c <critical>] [--chip <chip>]\n";
-    print "-w <percent>: warning threshold to become yellow\n";
-    print "-c <percent>: critical threshold to become red\n";
-    print "--chip <chip>: sensor chip\n";
-    exit 0;
-}
+echo "${label} ${temp}°C"
+echo "${label} ${temp}°C"
 
-GetOptions("help|h" => \&help,
-           "w=i"    => \$t_warn,
-           "c=i"    => \$t_crit,
-           "chip=s" => \$chip);
+if ((temp >= T_CRIT)); then
+    echo "#FF0000"
+    exit 33
+elif ((temp >= T_WARN)); then
+    echo "#FFFC00"
+fi
 
-# Get chip temperature
-open (SENSORS, "sensors -u $chip |") or die;
-while (<SENSORS>) {
-    if (/^\s+temp1_input:\s+[\+]*([\-]*\d+\.\d)/) {
-        $temperature = $1;
-        last;
-    }
-}
-close(SENSORS);
-
-$temperature eq -9999 and die 'Cannot find temperature';
-
-if ($temperature < 45) {
-  $label = '';
-} elsif ($temperature < 55) {
-  $label = '';
-} elsif ($temperature < 65) {
-  $label = '';
-} elsif ($temperature < 75) {
-  $label = '';
-} else {
-  $label = '';
-}
-# Print short_text, full_text
-print "${label}";
-print " $temperature°C\n";
-print "${label}";
-print " $temperature°C\n";
-
-# Print color, if needed
-if ($temperature >= $t_crit) {
-    print "#FF0000\n";
-    exit 33;
-} elsif ($temperature >= $t_warn) {
-    print "#FFFC00\n";
-}
-
-exit 0;
+exit 0

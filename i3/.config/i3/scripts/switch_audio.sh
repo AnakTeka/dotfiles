@@ -1,33 +1,45 @@
-#!/bin/bash
+#!/usr/bin/env bash
+set -Eeuo pipefail
 
-ldac=`pactl list | grep Active | grep a2dp`
-card=`pactl list | grep "Name: bluez_card." | cut -d ' ' -f 2`
+CARD="bluez_card.AC_80_0A_13_DD_3B"
 
+get_status() {
+  if ! pactl list cards short 2>/dev/null | awk -v C="$CARD" '$2==C{found=1} END{exit !found}'; then
+    echo " XM5 off"
+    return
+  fi
 
-function switch_audio {
-    if [ -n "$ldac" ]; then
-        pactl set-card-profile $card off
-        sleep 0.5
-        pactl set-card-profile $card headset-head-unit-msbc
-        echo " mSBC"
-    else
-        pactl set-card-profile $card off
-        sleep 0.5
-        pactl set-card-profile $card a2dp-sink
-        # pactl set-card-profile $card a2dp-sink-sbc_xq
-        echo " LDAC"
-    fi
+  local cur
+  cur="$(pactl list cards 2>/dev/null | awk -v C="$CARD" '
+    $0 ~ C {in_card=1}
+    in_card && /Active Profile:/ {print $3; exit}
+  ')"
 
+  if [[ "$cur" == "a2dp-sink" || "$cur" == a2dp-sink-* ]]; then
+    echo " LDAC"
+  else
+    echo " mSBC"
+  fi
 }
-case "$BLOCK_BUTTON" in
-    1) switch_audio ;;
+
+# Handle clicks
+case "${BLOCK_BUTTON:-0}" in
+  1) xm5-toggle >/dev/null 2>&1 || true ;;
+  3) xm5-toggle ldac >/dev/null 2>&1 || true ;;
+  2) xm5-toggle msbc >/dev/null 2>&1 || true ;;
 esac
 
-function print_current {
-    if [ -n "$ldac" ]; then
-        echo " LDAC"
-    else
-        echo " mSBC"
-    fi
-}
-print_current
+# If not running persistently, just print once and exit
+if [[ "${BLOCK_INTERVAL:-}" != "persist" ]]; then
+  get_status
+  exit 0
+fi
+
+# Persistent mode: print initial status, then update on changes
+get_status
+
+pactl subscribe 2>/dev/null | while read -r line; do
+  if [[ "$line" == *"card"* ]] || [[ "$line" == *"sink"* ]]; then
+    get_status
+  fi
+done
