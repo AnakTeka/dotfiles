@@ -76,6 +76,12 @@ if command -v notify-send >/dev/null 2>&1; then
   [[ "$NEW" == "a2dp-sink" ]] && notify-send "WH-1000XM5 → LDAC (A2DP)" || notify-send "WH-1000XM5 → mSBC (HFP)"
 fi
 
+# Resume media playback (apps often pause on audio device change)
+if command -v playerctl >/dev/null 2>&1; then
+  sleep 0.3
+  playerctl play 2>/dev/null || true
+fi
+
 echo "OK: $CARD → $NEW"
 [[ -n "${SINK:-}" ]] && echo "Default sink:   $SINK"
 [[ -n "${SRC:-}"  ]] && echo "Default source: $SRC"
