@@ -133,11 +133,12 @@ stop_all() {
     notify "VPN" "All VPNs disconnected"
 }
 
-# Handle click events
+# Handle click events (run in background so status updates immediately)
 case "${BLOCK_BUTTON:-0}" in
-    1) toggle_profile "$DEFAULT_PROFILE" ;;  # Left click
-    2) stop_all ;;                            # Middle click
-    3) show_menu ;;                           # Right click
+    1) toggle_profile "$DEFAULT_PROFILE" & ;;  # Left click
+    2) stop_all & ;;                            # Middle click
+    3) show_menu & ;;                           # Right click
 esac
 
+# Always output status immediately
 get_status
