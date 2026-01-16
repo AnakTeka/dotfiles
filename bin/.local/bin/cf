@@ -1,0 +1,78 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+usage() {
+  cat <<EOF
+Usage: copy-file [--gnome] <file...>
+
+Copies one or more files to the X11 clipboard so Ctrl+V in apps (e.g. Telegram) attaches them.
+
+Options:
+  --gnome   Use GNOME/Nautilus flavor (x-special/gnome-copied-files).
+            Default is text/uri-list (widely supported).
+
+Notes:
+  - Only regular files are accepted (no directories).
+  - Requires: xclip. Uses python3 for proper URI encoding if available.
+EOF
+}
+
+fmt="uri"  # "uri" => text/uri-list, "gnome" => x-special/gnome-copied-files
+files=()
+
+# Parse args
+while (( $# )); do
+  case "$1" in
+    --gnome) fmt="gnome"; shift;;
+    -h|--help) usage; exit 0;;
+    --) shift; break;;
+    -*) echo "Unknown option: $1" >&2; usage; exit 2;;
+    *) files+=("$1"); shift;;
+  esac
+done
+
+if (( ${#files[@]} == 0 )); then
+  echo "Error: no files specified." >&2
+  usage; exit 2
+fi
+
+# Build file:// URIs (properly encoded)
+uri_of() {
+  local p="$1"
+  if command -v python3 >/dev/null 2>&1; then
+    python3 - "$p" <<'PY'
+import sys, pathlib
+print(pathlib.Path(sys.argv[1]).resolve().as_uri())
+PY
+  else
+    # Fallback (no encoding): OK if paths have no special chars
+    printf 'file://%s\n' "$(realpath "$p")"
+  fi
+}
+
+uris=()
+for path in "${files[@]}"; do
+  if [[ ! -f "$path" ]]; then
+    echo "Not a regular file: $path" >&2
+    exit 1
+  fi
+  abs="$(realpath "$path")"
+  uris+=("$(uri_of "$abs")")
+done
+
+# Write to clipboard
+if [[ "$fmt" == "uri" ]]; then
+  # text/uri-list: one URI per line, CRLF is safest
+  {
+    for u in "${uris[@]}"; do printf '%s\r\n' "$u"; done
+  } | xclip -selection clipboard -t text/uri-list
+  echo "Copied ${#uris[@]} file(s) to clipboard as text/uri-list."
+else
+  # x-special/gnome-copied-files: first line is action, then URIs, LF ok
+  {
+    printf 'copy\n'
+    for u in "${uris[@]}"; do printf '%s\n' "$u"; done
+  } | xclip -selection clipboard -t x-special/gnome-copied-files
+  echo "Copied ${#uris[@]} file(s) to clipboard as x-special/gnome-copied-files."
+fi
+

@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# tpt: copy current dir (no args) or the absolute path of the first arg to the X11 clipboard
+
+if [[ $# -eq 0 ]]; then
+  path="$PWD"
+else
+  # realpath resolves to an absolute path; handles spaces safely
+  path="$(realpath -- "$1")" || { echo "Not found: $1" >&2; exit 1; }
+fi
+
+# No trailing newline
+printf '%s' "$path" | xclip -selection clipboard
+

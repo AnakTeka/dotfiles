@@ -1,0 +1,82 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+CARD="bluez_card.AC_80_0A_13_DD_3B"
+MAC_UNDER="AC_80_0A_13_DD_3B"
+MAC_COLON="AC:80:0A:13:DD:3B"
+
+REQ="${1:-toggle}"
+MOVE="${2:-move}"   # default: do move; change to 'nomove' if you prefer
+
+get_active_profile() {
+  pactl list cards | awk -v C="$CARD" '
+    $0 ~ C {in_card=1}
+    in_card && /Active Profile:/ {print $3; exit}
+  '
+}
+
+CUR="$(get_active_profile || true)"
+case "${REQ,,}" in
+  ldac|a2dp) NEW="a2dp-sink" ;;
+  msbc|hfp)  NEW="headset-head-unit" ;;
+  toggle)
+    if [[ "$CUR" == "a2dp-sink" || "$CUR" == a2dp-sink-* ]]; then
+      NEW="headset-head-unit"
+    else
+      NEW="a2dp-sink"
+    fi
+  ;;
+  *) echo "Usage: $(basename "$0") [ldac|msbc|toggle] [move|nomove]"; exit 2 ;;
+esac
+
+if ! pactl set-card-profile "$CARD" "$NEW"; then
+  echo "Error: set-card-profile failed; available profiles:" >&2
+  pactl list cards | awk -v C="$CARD" '
+    $0 ~ C {in_card=1}
+    in_card && /Profiles:/, /Active Profile:/{print}
+  ' >&2
+  exit 1
+fi
+
+# Give PipeWire time to re-publish nodes
+sleep 0.6
+
+# Targets (avoid monitors for source)
+SINK="$(pactl list short sinks   | awk -v M="$MAC_UNDER" '$2 ~ "^bluez_output\\." M {print $2; exit}')"
+SRC="$(pactl list short sources | awk -v M="$MAC_COLON" '$2 ~ "^bluez_input\\." M"$" {print $2; exit}')"
+
+moved_sink=0; moved_src=0
+
+if [[ "$MOVE" == move && -n "${SINK:-}" ]]; then
+  pactl set-default-sink "$SINK" || true
+  # Move only inputs not already on target; skip portals & echo-cancel
+  while read -r id sink name _; do
+    [[ "$sink" == "$SINK" ]] && continue
+    [[ "$name" =~ portal|EchoCancel|monitor ]] && continue
+    pactl move-sink-input "$id" "$SINK" 2>/dev/null && moved_sink=$((moved_sink+1)) || true
+  done < <(pactl list short sink-inputs | awk '{
+      id=$1; sink=$3;
+      # fetch app name
+      cmd="pactl list sink-inputs | awk \047$1==\"ID:\" && $2=="id" {id_seen=1} id_seen && /application.name/ {print; exit}\047";
+      # too heavy to run per-line; use a simple join with a second call:
+      print $0
+    }')
+fi
+
+if [[ "$MOVE" == move && "$NEW" == headset-head-unit && -n "${SRC:-}" ]]; then
+  pactl set-default-source "$SRC" || true
+  while read -r id src name _; do
+    [[ "$src" == "$SRC" ]] && continue
+    [[ "$name" =~ monitor|portal|EchoCancel ]] && continue
+    pactl move-source-output "$id" "$SRC" 2>/dev/null && moved_src=$((moved_src+1)) || true
+  done < <(pactl list short source-outputs)
+fi
+
+if command -v notify-send >/dev/null 2>&1; then
+  [[ "$NEW" == "a2dp-sink" ]] && notify-send "WH-1000XM5 → LDAC (A2DP)" || notify-send "WH-1000XM5 → mSBC (HFP)"
+fi
+
+echo "OK: $CARD → $NEW"
+[[ -n "${SINK:-}" ]] && echo "Default sink:   $SINK"
+[[ -n "${SRC:-}"  ]] && echo "Default source: $SRC"
+[[ "$MOVE" == move ]] && echo "Moved: $moved_sink sink-input(s), $moved_src source-output(s)"

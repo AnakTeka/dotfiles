@@ -1,0 +1,55 @@
+#!/usr/bin/env -S uv run --script
+#
+# /// script
+# requires-python = ">=3.12"
+# dependencies = ["PyQt5"]
+# ///
+import pathlib
+import sys
+
+from PyQt5 import QtCore, QtWidgets
+
+if len(sys.argv) < 2:
+    print("Usage: copy-file-x11 <path...>", file=sys.stderr)
+    sys.exit(2)
+
+# Build absolute paths and file:// URIs
+paths = []
+uris = []
+for p in sys.argv[1:]:
+    path = pathlib.Path(p).resolve()
+    if not path.exists():
+        print(f"Not found: {p}", file=sys.stderr)
+        sys.exit(1)
+    paths.append(str(path))
+    uris.append(path.as_uri())
+
+app = QtWidgets.QApplication([])
+
+mime = QtCore.QMimeData()
+
+# 1) Nautilus flavor
+gnome_payload = ("copy\n" + "\n".join(uris) + "\n").encode("utf-8")
+mime.setData("x-special/gnome-copied-files", gnome_payload)
+
+# 2) Standard URI list (CRLF)
+mime.setData("text/uri-list", ("\r\n".join(uris) + "\r\n").encode("utf-8"))
+
+# 3) Plain-text fallback
+mime.setText("\n".join(uris) + "\n")
+
+# Also set URLs (helps some apps)
+urls = [QtCore.QUrl.fromLocalFile(p) for p in paths]
+mime.setUrls(urls)
+
+cb = QtWidgets.QApplication.clipboard()
+cb.setMimeData(mime, mode=cb.Clipboard)
+
+# On X11, we need to keep the app running to serve clipboard data
+# The app will exit when something else takes clipboard ownership
+print(f"Copied {len(paths)} item(s) with Nautilus + chat-friendly targets.")
+print("Keeping process alive to maintain clipboard. It will auto-exit when you copy something else.")
+
+# Keep the app running to serve clipboard requests
+app.exec_()
+
