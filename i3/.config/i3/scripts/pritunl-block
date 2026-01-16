@@ -1,0 +1,143 @@
+#!/usr/bin/env bash
+# Pritunl VPN status block for i3blocks
+# Left click: toggle default profile
+# Right click: show profile menu
+# Middle click: stop all
+
+set -euo pipefail
+
+# Exit silently if pritunl-client not installed
+command -v pritunl-client >/dev/null 2>&1 || exit 0
+
+# Ensure DISPLAY is set for GUI apps (rofi, browser)
+export DISPLAY="${DISPLAY:-:0}"
+
+DEFAULT_PROFILE="p31"  # Your most used profile (prd)
+
+# Browser for SSO auth (work Chrome profile)
+AUTH_BROWSER="$HOME/.local/bin/work-chrome"
+
+# Profile ID to short name mapping
+declare -A PROFILE_NAMES=(
+    ["p31"]="prd"
+    ["e7b"]="stg"
+    ["vvf"]="eng"
+)
+
+get_status() {
+    local output
+    output=$(pritunl-client list 2>/dev/null) || { echo "VPN: err"; return; }
+
+    # Find active connection
+    local active_id active_state
+    while IFS='|' read -r _ id _ state _; do
+        id=$(echo "$id" | xargs)
+        state=$(echo "$state" | xargs)
+        if [[ "$state" == "Active" ]]; then
+            # Get short prefix for display
+            local prefix="${id:0:3}"
+            local name="${PROFILE_NAMES[$prefix]:-$prefix}"
+            echo "VPN: $name"
+            return
+        fi
+    done < <(echo "$output" | grep -E '^\|')
+
+    echo "VPN: off"
+}
+
+notify() {
+    notify-send -a "Pritunl VPN" -t 3000 "$1" "$2" 2>/dev/null || true
+}
+
+start_profile() {
+    local profile="$1"
+    local name="${PROFILE_NAMES[${profile:0:3}]:-$profile}"
+    local output
+
+    notify "VPN" "Connecting to $name..."
+
+    # Start and capture output for SSO URL
+    output=$(pritunl-client start "$profile" 2>&1) || true
+
+    # Extract SSO auth URL and open in work Chrome profile
+    local auth_url
+    auth_url=$(echo "$output" | grep -oE 'https://[^ ]+' | head -1) || true
+
+    if [[ -n "$auth_url" ]]; then
+        notify "VPN" "Opening SSO authentication..."
+        if [[ -x "$AUTH_BROWSER" ]]; then
+            "$AUTH_BROWSER" "$auth_url" &>/dev/null &
+        else
+            xdg-open "$auth_url" &>/dev/null &
+        fi
+    else
+        notify "VPN" "Connected to $name"
+    fi
+}
+
+stop_profile() {
+    local profile="$1"
+    local name="${PROFILE_NAMES[${profile:0:3}]:-$profile}"
+
+    notify "VPN" "Disconnecting from $name..."
+    pritunl-client stop "$profile" >/dev/null 2>&1
+    notify "VPN" "Disconnected from $name"
+}
+
+toggle_profile() {
+    local profile="${1:-$DEFAULT_PROFILE}"
+    local output
+    output=$(pritunl-client list 2>/dev/null) || return 1
+
+    # Check if this profile is active
+    if echo "$output" | grep -E "^\| *$profile" | grep -q "Active"; then
+        stop_profile "$profile"
+    else
+        # Stop any active connection first
+        while IFS='|' read -r _ id _ state _; do
+            id=$(echo "$id" | xargs)
+            state=$(echo "$state" | xargs)
+            if [[ "$state" == "Active" ]]; then
+                local active_prefix="${id:0:3}"
+                notify "VPN" "Disconnecting from ${PROFILE_NAMES[$active_prefix]:-$active_prefix}..."
+                pritunl-client stop "$active_prefix" >/dev/null 2>&1 || true
+            fi
+        done < <(echo "$output" | grep -E '^\|')
+
+        start_profile "$profile"
+    fi
+}
+
+show_menu() {
+    local options="prd (production)\nstg (staging)\neng (engineering)\n---\nStop all"
+    local choice
+    choice=$(echo -e "$options" | rofi -dmenu -p "VPN" -lines 5 -width 300 2>/dev/null) || return
+
+    case "$choice" in
+        "prd"*) toggle_profile "p31" ;;
+        "stg"*) toggle_profile "e7b" ;;
+        "eng"*) toggle_profile "vvf" ;;
+        "Stop"*)
+            pritunl-client stop p31 >/dev/null 2>&1 || true
+            pritunl-client stop e7b >/dev/null 2>&1 || true
+            pritunl-client stop vvf >/dev/null 2>&1 || true
+            ;;
+    esac
+}
+
+stop_all() {
+    notify "VPN" "Stopping all connections..."
+    pritunl-client stop p31 >/dev/null 2>&1 || true
+    pritunl-client stop e7b >/dev/null 2>&1 || true
+    pritunl-client stop vvf >/dev/null 2>&1 || true
+    notify "VPN" "All VPNs disconnected"
+}
+
+# Handle click events
+case "${BLOCK_BUTTON:-0}" in
+    1) toggle_profile "$DEFAULT_PROFILE" ;;  # Left click
+    2) stop_all ;;                            # Middle click
+    3) show_menu ;;                           # Right click
+esac
+
+get_status
