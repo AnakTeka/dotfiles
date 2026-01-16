@@ -36,16 +36,26 @@ my $player_arg = "";
 if ($BLOCK_INSTANCE) {
     $player_arg = "--player='$BLOCK_INSTANCE'";
 } else {
-    # Auto-detect: prefer a player that is currently "Playing"
+    # Auto-detect: prioritize Spotify if playing, else any playing player
     my @players = split(/\n/, qx(playerctl -l 2>/dev/null));
+    my $fallback = "";
+
     for my $p (@players) {
         my $status = qx(playerctl -p '$p' status 2>/dev/null);
         chomp $status;
         if ($status eq 'Playing') {
-            $player_arg = "--player='$p'";
-            last;
+            if ($p =~ /spotify/i) {
+                # Spotify playing = highest priority
+                $player_arg = "--player='$p'";
+                last;
+            } elsif (!$fallback) {
+                # First non-spotify playing player as fallback
+                $fallback = $p;
+            }
         }
     }
+    # Use fallback if Spotify wasn't playing
+    $player_arg = "--player='$fallback'" if (!$player_arg && $fallback);
 }
 
 sub buttons {
