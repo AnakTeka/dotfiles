@@ -1,11 +1,16 @@
 #!/usr/bin/env bash
-set -Eeuo pipefail
+# XM5 Bluetooth audio profile status for i3blocks
+# Left click: toggle LDAC/mSBC
+# Right click: force LDAC
+# Middle click: force mSBC
+
+set -euo pipefail
 
 CARD="bluez_card.AC_80_0A_13_DD_3B"
 
 get_status() {
   if ! pactl list cards short 2>/dev/null | awk -v C="$CARD" '$2==C{found=1} END{exit !found}'; then
-    echo " XM5 off"
+    echo " XM5 off"
     return
   fi
 
@@ -16,9 +21,9 @@ get_status() {
   ')"
 
   if [[ "$cur" == "a2dp-sink" || "$cur" == a2dp-sink-* ]]; then
-    echo " LDAC"
+    echo " LDAC"
   else
-    echo " mSBC"
+    echo " mSBC"
   fi
 }
 
@@ -29,17 +34,4 @@ case "${BLOCK_BUTTON:-0}" in
   2) ~/.local/bin/xm5-toggle msbc >/dev/null 2>&1 || true ;;
 esac
 
-# If not running persistently, just print once and exit
-if [[ "${BLOCK_INTERVAL:-}" != "persist" ]]; then
-  get_status
-  exit 0
-fi
-
-# Persistent mode: print initial status, then update on changes
 get_status
-
-pactl subscribe 2>/dev/null | while read -r line; do
-  if [[ "$line" == *"card"* ]] || [[ "$line" == *"sink"* ]]; then
-    get_status
-  fi
-done
