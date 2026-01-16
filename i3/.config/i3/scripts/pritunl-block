@@ -26,7 +26,7 @@ declare -A PROFILE_NAMES=(
 
 get_status() {
     local output
-    output=$(pritunl-client list 2>/dev/null) || { echo "VPN: err"; return; }
+    output=$(pritunl-client list 2>/dev/null) || { echo "Pritunl: err"; return; }
 
     # Find active connection
     local active_id active_state
@@ -37,12 +37,12 @@ get_status() {
             # Get short prefix for display
             local prefix="${id:0:3}"
             local name="${PROFILE_NAMES[$prefix]:-$prefix}"
-            echo "VPN: $name"
+            echo "Pritunl: $name"
             return
         fi
     done < <(echo "$output" | grep -E '^\|')
 
-    echo "VPN: off"
+    echo "Pritunl: off"
 }
 
 notify() {
@@ -54,7 +54,7 @@ start_profile() {
     local name="${PROFILE_NAMES[${profile:0:3}]:-$profile}"
     local output
 
-    notify "VPN" "Connecting to $name..."
+    notify "Pritunl" "Connecting to $name..."
 
     # Start and capture output for SSO URL
     output=$(pritunl-client start "$profile" 2>&1) || true
@@ -64,14 +64,14 @@ start_profile() {
     auth_url=$(echo "$output" | grep -oE 'https://[^ ]+' | head -1) || true
 
     if [[ -n "$auth_url" ]]; then
-        notify "VPN" "Opening SSO authentication..."
+        notify "Pritunl" "Opening SSO authentication..."
         if [[ -x "$AUTH_BROWSER" ]]; then
             "$AUTH_BROWSER" "$auth_url" &>/dev/null &
         else
             xdg-open "$auth_url" &>/dev/null &
         fi
     else
-        notify "VPN" "Connected to $name"
+        notify "Pritunl" "Connected to $name"
     fi
 }
 
@@ -79,9 +79,9 @@ stop_profile() {
     local profile="$1"
     local name="${PROFILE_NAMES[${profile:0:3}]:-$profile}"
 
-    notify "VPN" "Disconnecting from $name..."
+    notify "Pritunl" "Disconnecting from $name..."
     pritunl-client stop "$profile" >/dev/null 2>&1
-    notify "VPN" "Disconnected from $name"
+    notify "Pritunl" "Disconnected from $name"
 }
 
 toggle_profile() {
@@ -91,7 +91,7 @@ toggle_profile() {
 
     # Check if profile exists
     if ! echo "$output" | grep -qE "^\| *$profile"; then
-        notify "VPN" "Profile $profile not found"
+        notify "Pritunl" "Profile $profile not found"
         return 1
     fi
 
@@ -105,7 +105,7 @@ toggle_profile() {
             state=$(echo "$state" | xargs)
             if [[ "$state" == "Active" ]]; then
                 local active_prefix="${id:0:3}"
-                notify "VPN" "Disconnecting from ${PROFILE_NAMES[$active_prefix]:-$active_prefix}..."
+                notify "Pritunl" "Disconnecting from ${PROFILE_NAMES[$active_prefix]:-$active_prefix}..."
                 pritunl-client stop "$active_prefix" >/dev/null 2>&1 || true
             fi
         done < <(echo "$output" | grep -E '^\|')
@@ -117,7 +117,7 @@ toggle_profile() {
 show_menu() {
     local options="prd (production)\nstg (staging)\neng (engineering)\n---\nStop all"
     local choice
-    choice=$(echo -e "$options" | rofi -dmenu -p "VPN" -lines 5 -width 300 2>/dev/null) || return
+    choice=$(echo -e "$options" | rofi -dmenu -p "Pritunl" -lines 5 -width 300 2>/dev/null) || return
 
     case "$choice" in
         "prd"*) toggle_profile "p31" ;;
@@ -132,11 +132,11 @@ show_menu() {
 }
 
 stop_all() {
-    notify "VPN" "Stopping all connections..."
+    notify "Pritunl" "Stopping all connections..."
     pritunl-client stop p31 >/dev/null 2>&1 || true
     pritunl-client stop e7b >/dev/null 2>&1 || true
     pritunl-client stop vvf >/dev/null 2>&1 || true
-    notify "VPN" "All VPNs disconnected"
+    notify "Pritunl" "All VPNs disconnected"
 }
 
 # Handle click events (run in background so status updates immediately)
