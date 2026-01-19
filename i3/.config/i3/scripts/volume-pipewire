@@ -196,7 +196,7 @@ function print_block {
             echo "<span color='$COLOR'>Sound inactive</span>"
         else
             echo "Sound inactive"
-            echo "$COLOR"
+            echo "Sound inactive"
             echo "$COLOR"
         fi
     else
@@ -204,7 +204,7 @@ function print_block {
             echo "<span color='$COLOR'>$(print_format "$LONG_FORMAT")</span>"
         else
             print_format "$LONG_FORMAT"
-            echo "$COLOR"
+            print_format "$SHORT_FORMAT"
             echo "$COLOR"
         fi
     fi
