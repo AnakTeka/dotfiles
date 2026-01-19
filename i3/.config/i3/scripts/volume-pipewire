@@ -172,6 +172,7 @@ function print_block {
     VOL="${vol:-0}"
     MUTED="${muted:-no}"
     NAME="$pipewire_name"
+    INDEX="${sink##*.}"  # Short name: last part after dot
 
     if [[ $USE_ALSA_NAME == 1 && -n "$alsa_name" ]] ; then
         NAME="$alsa_name"
