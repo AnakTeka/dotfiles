@@ -143,8 +143,8 @@ function get_sink_block {
 function print_block {
     local sink block muted vol pipewire_name alsa_name description
 
-    sink="$(get_running_sink || true)"
-    [[ -z "$sink" ]] && sink="$(get_default_sink || true)"
+    sink="$(get_default_sink || true)"
+    [[ -z "$sink" ]] && sink="$(get_running_sink || true)"
     [[ -z "$sink" ]] && sink="$(get_first_sink || true)"
 
     block="$(get_sink_block "$sink" || true)"
