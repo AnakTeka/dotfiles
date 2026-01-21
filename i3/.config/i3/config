@@ -193,11 +193,11 @@ bindsym $mod+Shift+9 move container to workspace number $ws9
 bindsym $mod+Shift+0 move container to workspace number $ws10
 
 # Moving workspaces between screens
-bindsym $mod+p move workspace to output left
-bindsym $mod+bracketright move container to output right
-bindsym $mod+bracketleft move container to output left
+bindsym $mod+p exec --no-startup-id ~/.local/bin/i3-workspace-move-next-output.sh
+bindsym $mod+bracketright exec --no-startup-id ~/.local/bin/i3-container-move-direction.sh right
+bindsym $mod+bracketleft exec --no-startup-id ~/.local/bin/i3-container-move-direction.sh left
 
-bindsym $mod+u focus output left
+bindsym $mod+u exec --no-startup-id ~/.local/bin/i3-focus-next-output.sh
 
 
 # reload the configuration file
