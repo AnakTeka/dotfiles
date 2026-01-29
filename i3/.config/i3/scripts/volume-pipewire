@@ -86,24 +86,98 @@ fi
 CAPABILITY=$(amixer -D $MIXER get $SCONTROL | sed -n "s/  Capabilities:.*cvolume.*/Capture/p")
 
 
+VOLUME_PIPEWIRE_LOG="${XDG_RUNTIME_DIR:-/tmp}/volume-pipewire.log"
+
+function get_available_sinks {
+    # Returns only sinks with available ports (filters out unavailable HDMI/DP ports)
+    pactl list sinks 2>/dev/null | awk '
+        /^Sink #/ { name=""; has_ports=0; port_available=0 }
+        /^\tName:/ { name=$2 }
+        /^\t\t\[Out\].*available\)$/ { has_ports=1; if (/, available\)$/) port_available=1 }
+        /^$/ {
+            # Include sink if: no ports (virtual sink) OR has an available port
+            if (name && (!has_ports || port_available)) print name
+            name=""; has_ports=0; port_available=0
+        }
+        END {
+            if (name && (!has_ports || port_available)) print name
+        }
+    '
+}
+
 function move_sinks_to_new_default {
-    DEFAULT_SINK=$1
-    pactl list sink-inputs | grep 'Sink Input #' | grep -o '[0-9]\+' | while read SINK
-    do
-        pactl move-sink-input $SINK $DEFAULT_SINK
+    local target_sink=$1
+    echo "$(date '+%Y-%m-%d %H:%M:%S') Moving sink-inputs to: $target_sink" >> "$VOLUME_PIPEWIRE_LOG"
+
+    pactl list sink-inputs short 2>/dev/null | while read -r input_id client_id sink_id driver format; do
+        # Get app name for logging
+        local app_name
+        app_name=$(pactl list sink-inputs 2>/dev/null | awk -v id="$input_id" '
+            /^Sink Input #/ { current_id=$3; gsub("#","",current_id) }
+            current_id==id && /application\.name = / {
+                gsub(/.*application\.name = "|"$/, ""); print; exit
+            }
+        ')
+        app_name="${app_name:-unknown}"
+
+        echo "  Sink-input #$input_id ($app_name)" >> "$VOLUME_PIPEWIRE_LOG"
+
+        if output=$(pactl move-sink-input "$input_id" "$target_sink" 2>&1); then
+            echo "    -> Moved successfully" >> "$VOLUME_PIPEWIRE_LOG"
+        else
+            echo "    -> FAILED: $output" >> "$VOLUME_PIPEWIRE_LOG"
+        fi
     done
 }
 
 function set_default_playback_device_next {
-    inc=${1:-1}
-    num_devices=$(pactl list sinks | grep -c Name:)
-    sink_arr=($(pactl list sinks | grep Name: | sed -r 's/\s+Name: (.+)/\1/'))
+    local inc=${1:-1}
+
+    # Get only available sinks
+    local sink_arr
+    mapfile -t sink_arr < <(get_available_sinks)
+    local num_devices=${#sink_arr[@]}
+
+    if [[ $num_devices -eq 0 ]]; then
+        echo "  No available sinks found" >> "$VOLUME_PIPEWIRE_LOG"
+        return 1
+    fi
+
+    local default_sink
     default_sink=$(pactl get-default-sink)
-    default_sink_index=$(for i in "${!sink_arr[@]}"; do if [[ "$default_sink" = "${sink_arr[$i]}" ]]; then echo "$i"; fi done)
-    default_sink_index=$(( ($default_sink_index + $num_devices + $inc) % $num_devices ))
-    default_sink=${sink_arr[$default_sink_index]}
-    pactl set-default-sink $default_sink
-    move_sinks_to_new_default $default_sink
+
+    # Find current index
+    local default_sink_index=-1
+    for i in "${!sink_arr[@]}"; do
+        if [[ "$default_sink" == "${sink_arr[$i]}" ]]; then
+            default_sink_index=$i
+            break
+        fi
+    done
+
+    # If current default not in available list, start from 0
+    if [[ $default_sink_index -eq -1 ]]; then
+        default_sink_index=0
+    else
+        default_sink_index=$(( (default_sink_index + num_devices + inc) % num_devices ))
+    fi
+
+    local new_sink="${sink_arr[$default_sink_index]}"
+
+    echo "" >> "$VOLUME_PIPEWIRE_LOG"
+    echo "========================================" >> "$VOLUME_PIPEWIRE_LOG"
+    echo "$(date '+%Y-%m-%d %H:%M:%S') Switching audio output" >> "$VOLUME_PIPEWIRE_LOG"
+    echo "  Previous default: $default_sink" >> "$VOLUME_PIPEWIRE_LOG"
+    echo "  New default: $new_sink" >> "$VOLUME_PIPEWIRE_LOG"
+    echo "  Available sinks (${num_devices}): ${sink_arr[*]}" >> "$VOLUME_PIPEWIRE_LOG"
+
+    if output=$(pactl set-default-sink "$new_sink" 2>&1); then
+        echo "  set-default-sink: OK" >> "$VOLUME_PIPEWIRE_LOG"
+    else
+        echo "  set-default-sink: FAILED - $output" >> "$VOLUME_PIPEWIRE_LOG"
+    fi
+
+    move_sinks_to_new_default "$new_sink"
 }
 
 case "$BLOCK_BUTTON" in
