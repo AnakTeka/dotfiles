@@ -29,15 +29,22 @@ get_status() {
     output=$(pritunl-client list 2>/dev/null) || { echo "Pritunl: err"; return; }
 
     # Find active connection
-    local active_id active_state
-    while IFS='|' read -r _ id _ state _; do
+    # Columns: ID | NAME | STATE | AUTOSTART | ONLINE FOR | SERVER ADDRESS | CLIENT ADDRESS
+    while IFS='|' read -r _ id _ state _ online_for server_addr client_addr _; do
         id=$(echo "$id" | xargs)
         state=$(echo "$state" | xargs)
+        online_for=$(echo "$online_for" | xargs)
+        server_addr=$(echo "$server_addr" | xargs)
+        client_addr=$(echo "$client_addr" | xargs)
         if [[ "$state" == "Active" ]]; then
-            # Get short prefix for display
             local prefix="${id:0:3}"
             local name="${PROFILE_NAMES[$prefix]:-$prefix}"
-            echo "Pritunl: $name"
+            # Check if actually connected: not "Connecting" and has valid addresses
+            if [[ "$online_for" != "Connecting" && -n "$server_addr" && "$server_addr" != "-" && -n "$client_addr" && "$client_addr" != "-" ]]; then
+                echo "Pritunl: $name"
+            else
+                echo "Pritunl: $name..."
+            fi
             return
         fi
     done < <(echo "$output" | grep -E '^\|')
