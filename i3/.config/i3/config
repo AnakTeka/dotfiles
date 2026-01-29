@@ -152,6 +152,9 @@ bindsym $mod+space focus mode_toggle
 # focus the parent container
 bindsym $mod+a focus parent
 
+# rename focused container
+bindsym $mod+n exec --no-startup-id ~/.local/bin/i3-rename-container.sh
+
 # focus the child container
 #bindsym $mod+d focus child
 
@@ -314,7 +317,7 @@ set $yellowbrown	#e1b700
 #class		        	border		bground		text		indicator	child_border
 client.focused		    	$lightblue	$darkblue	$white		$mediumgrey	$mediumgrey
 client.unfocused	    	$darkblue	$darkblue	$grey		$darkgrey	$darkgrey
-client.focused_inactive		$darkblue	$darkblue	$grey		$black		$black
+client.focused_inactive		$lightblue	$darkgrey	$white		$black		$darkgrey
 client.urgent		    	$urgentred	$urgentred	$white		$yellowbrown	$yellowbrown
 
 ############################################
