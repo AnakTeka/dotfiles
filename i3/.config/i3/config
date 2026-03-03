@@ -261,7 +261,14 @@ bindsym Mod1+Sys_Req --release exec "maim -o -i $(xdotool getactivewindow) | xcl
 # bindsym Shift+Print exec "/home/yoga/stuff/scripts/floating_screenshot.sh"
 
 
-bindsym $mod+Tab exec --no-startup-id j4-dmenu-desktop --dmenu="rofi -show window -lines 10 -width 500 -display-window 'WORKSPACE'"
+bindsym $mod+Tab exec --no-startup-id ~/.local/bin/i3-grouped-switcher.sh
+
+mode "window_cycle" {
+    bindsym n exec --no-startup-id ~/.local/bin/i3-window-cycle.sh next
+    bindsym p exec --no-startup-id ~/.local/bin/i3-window-cycle.sh prev
+    bindsym Return mode "default"
+    bindsym Escape mode "default"
+}
 # bindsym Mod1+Tab nop mode_workspace_back_and_forth
 
 # Scratchpad keys
