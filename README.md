@@ -1,59 +1,53 @@
 # dotfiles
 
 Personal dotfiles managed with [GNU Stow](https://www.gnu.org/software/stow/),
-shared across multiple machines (a desktop `rumah-arch` and a laptop
-`thinkpad-dipo`).
+shared across multiple machines (a desktop and a laptop) via per-machine
+packages.
 
-## Highlights
+## Notable scripts
 
-Not just configs — these are the custom scripts that make this setup mine:
+Beyond the standard configs, the repo includes a number of custom scripts:
 
-- **Grouped Alt-Tab for i3** &nbsp;·&nbsp; `bin/.local/bin/i3-grouped-switcher.sh`
-  A from-scratch window switcher (`$mod+Tab`) that groups windows with a single
-  `jq` tree-transform: configurable apps group by class, regex-matched titles
-  (e.g. all "Claude Code" windows) collapse into one entry, and selecting a
-  multi-window group drops you into a custom i3 mode where `n`/`p` cycle just
-  those windows with wrap-around.
+- `bin/.local/bin/i3-grouped-switcher.sh` — a grouped window switcher for i3
+  (bound to `$mod+Tab`). It groups windows with a `jq` transform over the i3
+  tree: configurable apps group by class, titles matching configurable regexes
+  collapse into one entry, and selecting a multi-window group enters an i3 mode
+  where `n`/`p` cycle through that group's windows.
 
-- **Bluetooth codec toggle that moves your audio with it** &nbsp;·&nbsp; `bin/.local/bin/xm5-toggle`
-  Flips Sony WH-1000XM5 between LDAC (hi-fi) and mSBC/HFP (mic mode), then
-  **live-migrates every running audio stream** to the new endpoint — skipping the
-  portal/echo-cancel/monitor streams that shouldn't move — and notifies the codec.
+- `bin/.local/bin/xm5-toggle` — toggles Sony WH-1000XM5 headphones between LDAC
+  and mSBC/HFP profiles, then migrates active audio streams to the new endpoint
+  (skipping portal/echo-cancel/monitor streams) and reports the active codec.
 
-- **Profile-level headphone auto-switching** &nbsp;·&nbsp; `wireplumber/.../autoswitch-headphones-profile.lua`
-  A custom WirePlumber event hook for Intel SOF cards, where Speaker and
-  Headphones live on *separate profiles* (stock auto-switch only handles routes
-  within one profile). Detects jack availability and sets the target profile via
-  a raw SPA Pod.
+- `wireplumber/.../autoswitch-headphones-profile.lua` — a WirePlumber event hook
+  that switches between Speaker and Headphones *profiles* on Intel SOF cards,
+  where the two outputs sit on separate profiles (stock auto-switch only changes
+  routes within one profile). Sets the target profile via a SPA Pod.
 
-- **Copy real files to the clipboard, for chat apps** &nbsp;·&nbsp; `bin/.local/bin/cf`, `cf-x11`
-  `Ctrl+V` in Telegram/etc. attaches the actual file, not a path. Sets multiple
-  clipboard MIME targets (`text/uri-list`, GNOME's `x-special`), percent-encodes
-  URIs correctly, and retains X11 clipboard ownership. `cf-x11` is a self-
-  provisioning PEP 723 `uv` inline script (declares its own PyQt5 dep).
+- `bin/.local/bin/cf`, `cf-x11` — copy real files to the X11 clipboard so a paste
+  in a chat app attaches the file rather than its path. Sets multiple clipboard
+  MIME targets and percent-encodes the URIs; `cf-x11` is a PEP 723 `uv` inline
+  script that declares its own PyQt5 dependency.
 
-- **`rm` history that can't bite you** &nbsp;·&nbsp; `zsh/.zshrc` (`zshaddhistory`)
-  Every `rm` / `sudo rm` is still saved to history — but **prefixed with `#`** so
-  it's searchable yet can never be re-run by an accidental up-arrow + Enter.
-  Layered with `rm -I`, `rm_star_wait`, and append-only timestamped history.
+- `zsh/.zshrc` (`zshaddhistory`) — commands starting with `rm` / `sudo rm` are
+  saved to history prefixed with `#`, so they stay searchable but are not
+  re-executed by recalling history. Paired with `rm -I` and `rm_star_wait`.
 
-- **VPN block with one-click SSO** &nbsp;·&nbsp; `i3/.config/i3/scripts/pritunl-block`
-  Maps cryptic Pritunl profile IDs to friendly names; left-click toggles,
-  right-click is a rofi menu, middle-click drops all. Extracts the SSO auth URL
-  from the client and opens it in a dedicated work browser profile.
+- `i3/.config/i3/scripts/pritunl-block` — i3blocks block for the Pritunl VPN
+  client: maps profile IDs to readable names, supports click-to-toggle and a rofi
+  menu, and opens the SSO auth URL in a designated browser profile.
 
-- **PipeWire output cycling that's actually usable** &nbsp;·&nbsp; `i3/.config/i3/scripts/volume-pipewire`
-  Middle-click cycles the default sink **only among outputs with available ports**
-  (no dead HDMI/DP entries) and migrates active streams to it. Optional persistent
-  mode uses a bash `coproc` to multiplex `pactl subscribe` events with click JSON.
+- `i3/.config/i3/scripts/volume-pipewire` — cycles the default PipeWire sink among
+  outputs with available ports and migrates active streams to it. An optional
+  persistent mode uses a bash `coproc` to multiplex `pactl subscribe` events with
+  click events.
 
-- **Self-documenting keybindings** &nbsp;·&nbsp; `i3/.config/i3/scripts/keyhint`
-  A rofi cheat-sheet generated *live from the running i3 config* — parses
-  `bindsym` lines and resolves `$mod`/`Mod1`→`Alt`, so the help is never stale.
+- `i3/.config/i3/scripts/keyhint` — generates a rofi keybinding reference from the
+  running i3 config by parsing `bindsym` lines, so it stays in sync with the
+  actual bindings.
 
-Plus a wrap-around multi-monitor nav set (`i3-focus-next-output.sh` &
-friends) that warps the cursor to the target output so focus-follows-mouse
-doesn't fight you.
+- `bin/.local/bin/i3-focus-next-output.sh` and siblings — multi-monitor focus and
+  move helpers with wrap-around ordering; the workspace mover warps the pointer
+  to the target output.
 
 ## Architecture
 
@@ -118,8 +112,9 @@ cd ~/.dotfiles
 # 3. Back up any pre-existing dotfiles that would collide (see Gotchas).
 #    e.g.  mv ~/.zshrc ~/.zshrc.bak
 
-# 4. Stow everything for this machine (auto-detects hostname):
-./bootstrap.sh
+# 4. Stow everything for this machine. The first run asks for a role
+#    (pc/laptop) and remembers it in ~/.dotfiles-machine:
+./bootstrap.sh                  # or: MACHINE=pc ./bootstrap.sh
 
 # 5. Fill in secrets (bootstrap created ~/.zshrc.local from the template):
 $EDITOR ~/.zshrc.local
@@ -128,9 +123,12 @@ $EDITOR ~/.zshrc.local
 exec zsh
 ```
 
-`bootstrap.sh` picks the right `i3-<machine>` / `zsh-<machine>` (and
-`wireplumber` on the laptop) from the hostname, warns about missing
-prerequisites, and creates `~/.zshrc.local` if absent.
+`bootstrap.sh` resolves the machine **role** (from `$MACHINE`, the untracked
+`~/.dotfiles-machine` file, or a one-time prompt), stows the matching
+`i3-<role>` / `zsh-<role>` packages (and `wireplumber` for the laptop role),
+warns about missing prerequisites, and creates `~/.zshrc.local` if absent.
+Roles are derived from the `zsh-<role>` packages present, so no hostnames live
+in the repo.
 
 ### Manual stow (without bootstrap)
 
@@ -143,12 +141,12 @@ stow wireplumber                            # laptop only
 
 ## Adding a new machine
 
-1. Add a `case` arm for its hostname in `bootstrap.sh` mapping it to a role.
-2. Create `zsh-<machine>/.config/zsh/machine.zsh` and
-   `i3-<machine>/.config/i3/config.local` (copy an existing one and adjust the
+1. Create `zsh-<role>/.config/zsh/machine.zsh` and
+   `i3-<role>/.config/i3/config.local` (copy an existing role and adjust the
    machine-specific paths: conda root, gcloud SDK location, monitor name,
-   wallpaper, input devices).
-3. Run `./bootstrap.sh`.
+   wallpaper, input devices). The new `<role>` is picked up automatically.
+2. Run `./bootstrap.sh` and enter `<role>` when prompted (or
+   `MACHINE=<role> ./bootstrap.sh`).
 
 ## Gotchas
 
@@ -166,8 +164,10 @@ stow wireplumber                            # laptop only
   work-only tooling. `bootstrap.sh` seeds it from `zsh/.zshrc.local.example`.
   **Never commit it** — the repo is public. Back it up out-of-band (password
   manager / private gist), since git won't.
-- **Unknown hostnames default to `pc`.** `bootstrap.sh` prints a warning; add a
-  `case` arm before relying on it.
+- **The machine role is local, not derived from hostname.** It's stored in the
+  untracked `~/.dotfiles-machine` (or passed via `MACHINE=`), so no personal
+  hostnames end up in a public repo. An unset/unknown role makes `bootstrap.sh`
+  prompt and list the available roles.
 - **Per-machine paths are absolute.** `zsh-<machine>/machine.zsh` hardcodes conda
   roots (`miniconda3` vs `miniforge3`) and gcloud SDK locations; the i3
   `config.local` hardcodes the monitor name (`DP-0`) and `~/Pictures/wallpaper.png`.

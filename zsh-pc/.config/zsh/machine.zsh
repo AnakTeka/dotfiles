@@ -1,4 +1,4 @@
-# Machine-specific zsh config for rumah-arch (PC). Tracked via stow:zsh-pc.
+# Machine-specific zsh config (pc role). Tracked via stow:zsh-pc.
 
 # conda (managed by 'conda init')
 __conda_setup="$('/home/yoga/miniconda3/bin/conda' 'shell.zsh' 'hook' 2> /dev/null)"

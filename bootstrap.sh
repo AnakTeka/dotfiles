@@ -1,16 +1,22 @@
 #!/usr/bin/env bash
-# Stow the right dotfiles packages for this host.
+# Stow the right dotfiles packages for this machine.
 #
 # Tiers:
 #   - shared packages: identical on every machine
-#   - i3-<machine> / zsh-<machine>: tracked, machine-specific (conda root, displays, ...)
+#   - i3-<role> / zsh-<role>: tracked, machine-specific (conda root, displays, ...)
 #   - ~/.zshrc.local: untracked secrets (see zsh/.zshrc.local.example)
 #
-# Usage: ./bootstrap.sh            # detect machine from hostname, stow everything
-#        MACHINE=pc ./bootstrap.sh # force a machine role
+# The machine "role" selects the per-machine packages. It is resolved from, in
+# order: the $MACHINE env var, the untracked ~/.dotfiles-machine file, or an
+# interactive prompt (whose answer is saved). Roles are kept out of git so no
+# personal hostnames are published.
+#
+# Usage: ./bootstrap.sh            # use the saved/prompted role
+#        MACHINE=pc ./bootstrap.sh # force a role for this run
 set -euo pipefail
 cd "$(dirname "$0")"
 DOTFILES="$PWD"
+ROLE_FILE="$HOME/.dotfiles-machine"
 
 # --- the repo must live at ~/.dotfiles: the shared symlinks assume this path ---
 if [ "$DOTFILES" != "$HOME/.dotfiles" ]; then
@@ -18,24 +24,35 @@ if [ "$DOTFILES" != "$HOME/.dotfiles" ]; then
   echo "         Stow links and some configs assume ~/.dotfiles. Continue at your own risk." >&2
 fi
 
-# --- detect machine role ---
-MACHINE="${MACHINE:-}"
-if [ -z "$MACHINE" ]; then
-  case "$(hostname)" in
-    thinkpad-dipo) MACHINE=laptop ;;
-    rumah-arch)    MACHINE=pc ;;
-    *) echo "Unknown host '$(hostname)'; defaulting to MACHINE=pc." >&2
-       echo "  Add a case for this hostname, and create zsh-<machine>/i3-<machine> packages if its paths differ." >&2
-       MACHINE=pc ;;
-  esac
-fi
-echo "==> Machine role: $MACHINE ($(hostname))"
-
 # --- hard requirement: stow ---
 if ! command -v stow >/dev/null 2>&1; then
   echo "ERROR: GNU Stow is not installed. Install it first (e.g. pacman -S stow)." >&2
   exit 1
 fi
+
+# --- resolve machine role (roles are discovered from the zsh-<role> packages) ---
+roles=""
+for d in zsh-*/; do [ -d "$d" ] && roles+="${d#zsh-} "; done
+roles="${roles//\/ / }"; roles="${roles%% }"
+MACHINE="${MACHINE:-}"
+if [ -z "$MACHINE" ] && [ -f "$ROLE_FILE" ]; then
+  MACHINE="$(tr -d '[:space:]' < "$ROLE_FILE")"
+fi
+if [ -z "$MACHINE" ]; then
+  echo "No machine role set. Available roles: ${roles:-<none>}"
+  printf "Enter role: "
+  read -r MACHINE || true
+  if [ -n "$MACHINE" ]; then
+    echo "$MACHINE" > "$ROLE_FILE"
+    echo "==> Saved role to $ROLE_FILE (untracked)."
+  fi
+fi
+if [ ! -d "zsh-$MACHINE" ] || [ ! -d "i3-$MACHINE" ]; then
+  echo "ERROR: role '$MACHINE' has no zsh-$MACHINE / i3-$MACHINE package." >&2
+  echo "  Available roles: ${roles:-<none>}. Create the packages or pick an existing role." >&2
+  exit 1
+fi
+echo "==> Machine role: $MACHINE"
 
 # --- soft requirements: warn loudly, because the shared .zshrc sources them unconditionally ---
 missing=()
@@ -70,8 +87,9 @@ run_stow() {
 run_stow --no-folding bin
 run_stow i3 nvim rofi terminator tmux zsh looking-glass
 run_stow "i3-$MACHINE" "zsh-$MACHINE"
-if [ "$MACHINE" = laptop ]; then
+# wireplumber is only useful on the laptop role (Intel SOF audio); stow it when present and applicable
+if [ "$MACHINE" = laptop ] && [ -d wireplumber ]; then
   run_stow wireplumber
 fi
 
-echo "==> Done. Stowed dotfiles for $MACHINE. Restart your shell (exec zsh) to pick up changes."
+echo "==> Done. Stowed dotfiles for role '$MACHINE'. Restart your shell (exec zsh) to pick up changes."

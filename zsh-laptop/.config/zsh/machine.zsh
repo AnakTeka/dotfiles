@@ -1,4 +1,4 @@
-# Machine-specific zsh config for thinkpad-dipo (laptop). Tracked via stow:zsh-laptop.
+# Machine-specific zsh config (laptop role). Tracked via stow:zsh-laptop.
 
 # conda (managed by 'conda init')
 __conda_setup="$('/home/yoga/miniforge3/bin/conda' 'shell.zsh' 'hook' 2> /dev/null)"
