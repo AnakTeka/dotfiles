@@ -70,9 +70,12 @@ ZSH_THEME="robbyrussell"
 # Custom plugins may be added to $ZSH_CUSTOM/plugins/
 # Example format: plugins=(rails git textmate ruby lighthouse)
 # Add wisely, as too many plugins slow down shell startup.
-plugins=(git git-prompt docker archlinux)
+plugins=(git docker archlinux)
 
 source $ZSH/oh-my-zsh.sh
+
+# Add hostname to prompt
+PROMPT="%m $PROMPT"
 
 # User configuration
 
@@ -120,11 +123,13 @@ unset __conda_setup
 
 EDITOR=vim
 alias vim=nvim
-alias lgc=/home/yoga/Downloads/looking-glass-B7-4-afbd844b/client/build/looking-glass-client
+alias rm='rm -I'
+alias lgc=/home/yoga/stuff/git_repository/LookingGlass/client/build/looking-glass-client
 
 setopt no_rm_star_silent
+setopt rm_star_wait
 autoload -U colors && colors
-PS1="%{$fg[cyan]%}${${(%):-%m}} %{$fg[yellow]%}%~ %{$reset_color%}%% "
+#PS1="%{$fg[cyan]%}${${(%):-%m}} %{$fg[yellow]%}%~ %{$reset_color%}%% "
 
 . "$HOME/.local/bin/env"
 eval "$(uv generate-shell-completion zsh)"
@@ -134,12 +139,19 @@ HISTFILE=~/.zsh_history
 HISTSIZE=999999999
 SAVEHIST=$HISTSIZE
 
+setopt HIST_IGNORE_SPACE
+# Persist history safely: write each command immediately and append (never
+# overwrite the whole file on exit), keep timestamps, avoid dup spam.
+setopt EXTENDED_HISTORY     # record timestamp + duration for each entry
+setopt INC_APPEND_HISTORY   # write to $HISTFILE as soon as a command runs
+setopt APPEND_HISTORY       # append, never truncate/overwrite the file
+setopt HIST_FIND_NO_DUPS    # don't show dups when searching
+
 function zshaddhistory() {
   emulate -L zsh
-  if ! [[ "$1" =~ "(^ |^rm|^sudo rm )" ]] ; then
-      print -sr -- "${1%%$'\n'}"
-      fc -p
-  else
+  if [[ "$1" =~ "^(rm|sudo rm)" ]]; then
+      # Prefix with # so it's in history but commented out
+      print -sr -- "# ${1%%$'\n'}"
       return 1
   fi
 }
@@ -179,6 +191,38 @@ fzf-copy-path() {
 zle -N fzf-copy-path
 bindkey '^[p' fzf-copy-path
 bindkey '\ef' emacs-forward-word
+bindkey '^U' backward-kill-line
 
-alias tpt='pwd | tr -d "\n" | xclip -selection clipboard'
+alias cpc=copy-file
 
+
+# bun completions
+[ -s "/home/yoga/.bun/_bun" ] && source "/home/yoga/.bun/_bun"
+
+# bun
+export BUN_INSTALL="$HOME/.bun"
+export PATH="$BUN_INSTALL/bin:$PATH"
+export PATH="/home/yoga/.cargo/bin:$PATH"
+export THEOS=~/theos
+
+
+# opencode
+export PATH=/home/yoga/.opencode/bin:$PATH
+
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
+[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
+
+# Amp CLI
+export PATH="/home/yoga/.amp/bin:$PATH"
+export AMP_URL="http://localhost:8317"
+
+[[ "$TERM_PROGRAM" == "kiro" ]] && . "$(kiro --locate-shell-integration-path zsh)"
+
+# The next line updates PATH for the Google Cloud SDK.
+if [ -f '/home/yoga/Downloads/google-cloud-sdk/path.zsh.inc' ]; then . '/home/yoga/Downloads/google-cloud-sdk/path.zsh.inc'; fi
+
+# The next line enables shell command completion for gcloud.
+if [ -f '/home/yoga/Downloads/google-cloud-sdk/completion.zsh.inc' ]; then . '/home/yoga/Downloads/google-cloud-sdk/completion.zsh.inc'; fi
+
+[[ -f ~/.zshrc.local ]] && source ~/.zshrc.local
