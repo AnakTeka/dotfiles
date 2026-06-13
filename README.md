@@ -4,6 +4,57 @@ Personal dotfiles managed with [GNU Stow](https://www.gnu.org/software/stow/),
 shared across multiple machines (a desktop `rumah-arch` and a laptop
 `thinkpad-dipo`).
 
+## Highlights
+
+Not just configs — these are the custom scripts that make this setup mine:
+
+- **Grouped Alt-Tab for i3** &nbsp;·&nbsp; `bin/.local/bin/i3-grouped-switcher.sh`
+  A from-scratch window switcher (`$mod+Tab`) that groups windows with a single
+  `jq` tree-transform: configurable apps group by class, regex-matched titles
+  (e.g. all "Claude Code" windows) collapse into one entry, and selecting a
+  multi-window group drops you into a custom i3 mode where `n`/`p` cycle just
+  those windows with wrap-around.
+
+- **Bluetooth codec toggle that moves your audio with it** &nbsp;·&nbsp; `bin/.local/bin/xm5-toggle`
+  Flips Sony WH-1000XM5 between LDAC (hi-fi) and mSBC/HFP (mic mode), then
+  **live-migrates every running audio stream** to the new endpoint — skipping the
+  portal/echo-cancel/monitor streams that shouldn't move — and notifies the codec.
+
+- **Profile-level headphone auto-switching** &nbsp;·&nbsp; `wireplumber/.../autoswitch-headphones-profile.lua`
+  A custom WirePlumber event hook for Intel SOF cards, where Speaker and
+  Headphones live on *separate profiles* (stock auto-switch only handles routes
+  within one profile). Detects jack availability and sets the target profile via
+  a raw SPA Pod.
+
+- **Copy real files to the clipboard, for chat apps** &nbsp;·&nbsp; `bin/.local/bin/cf`, `cf-x11`
+  `Ctrl+V` in Telegram/etc. attaches the actual file, not a path. Sets multiple
+  clipboard MIME targets (`text/uri-list`, GNOME's `x-special`), percent-encodes
+  URIs correctly, and retains X11 clipboard ownership. `cf-x11` is a self-
+  provisioning PEP 723 `uv` inline script (declares its own PyQt5 dep).
+
+- **`rm` history that can't bite you** &nbsp;·&nbsp; `zsh/.zshrc` (`zshaddhistory`)
+  Every `rm` / `sudo rm` is still saved to history — but **prefixed with `#`** so
+  it's searchable yet can never be re-run by an accidental up-arrow + Enter.
+  Layered with `rm -I`, `rm_star_wait`, and append-only timestamped history.
+
+- **VPN block with one-click SSO** &nbsp;·&nbsp; `i3/.config/i3/scripts/pritunl-block`
+  Maps cryptic Pritunl profile IDs to friendly names; left-click toggles,
+  right-click is a rofi menu, middle-click drops all. Extracts the SSO auth URL
+  from the client and opens it in a dedicated work browser profile.
+
+- **PipeWire output cycling that's actually usable** &nbsp;·&nbsp; `i3/.config/i3/scripts/volume-pipewire`
+  Middle-click cycles the default sink **only among outputs with available ports**
+  (no dead HDMI/DP entries) and migrates active streams to it. Optional persistent
+  mode uses a bash `coproc` to multiplex `pactl subscribe` events with click JSON.
+
+- **Self-documenting keybindings** &nbsp;·&nbsp; `i3/.config/i3/scripts/keyhint`
+  A rofi cheat-sheet generated *live from the running i3 config* — parses
+  `bindsym` lines and resolves `$mod`/`Mod1`→`Alt`, so the help is never stale.
+
+Plus a wrap-around multi-monitor nav set (`i3-focus-next-output.sh` &
+friends) that warps the cursor to the target output so focus-follows-mouse
+doesn't fight you.
+
 ## Architecture
 
 Config is split into three tiers so the same repo works on every machine
