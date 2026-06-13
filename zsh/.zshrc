@@ -106,25 +106,9 @@ PROMPT="%m $PROMPT"
 # [ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
 source <(fzf --zsh)
 
-# >>> conda initialize >>>
-# !! Contents within this block are managed by 'conda init' !!
-__conda_setup="$('/home/yoga/miniconda3/bin/conda' 'shell.zsh' 'hook' 2> /dev/null)"
-if [ $? -eq 0 ]; then
-    eval "$__conda_setup"
-else
-    if [ -f "/home/yoga/miniconda3/etc/profile.d/conda.sh" ]; then
-        . "/home/yoga/miniconda3/etc/profile.d/conda.sh"
-    else
-        export PATH="/home/yoga/miniconda3/bin:$PATH"
-    fi
-fi
-unset __conda_setup
-# <<< conda initialize <<<
-
 EDITOR=vim
 alias vim=nvim
 alias rm='rm -I'
-alias lgc=/home/yoga/stuff/git_repository/LookingGlass/client/build/looking-glass-client
 
 setopt no_rm_star_silent
 setopt rm_star_wait
@@ -193,6 +177,17 @@ bindkey '^[p' fzf-copy-path
 bindkey '\ef' emacs-forward-word
 bindkey '^U' backward-kill-line
 
+# Smart Ctrl+T: show only directories when the command starts with "cd"
+fzf-smart-file-widget() {
+  if [[ "$LBUFFER" =~ ^cd\ * ]]; then
+    FZF_CTRL_T_COMMAND="find . -type d -not -path '*/.*'" fzf-file-widget
+  else
+    fzf-file-widget
+  fi
+}
+zle -N fzf-smart-file-widget
+bindkey '^T' fzf-smart-file-widget
+
 alias cpc=copy-file
 
 
@@ -219,10 +214,7 @@ export AMP_URL="http://localhost:8317"
 
 [[ "$TERM_PROGRAM" == "kiro" ]] && . "$(kiro --locate-shell-integration-path zsh)"
 
-# The next line updates PATH for the Google Cloud SDK.
-if [ -f '/home/yoga/Downloads/google-cloud-sdk/path.zsh.inc' ]; then . '/home/yoga/Downloads/google-cloud-sdk/path.zsh.inc'; fi
-
-# The next line enables shell command completion for gcloud.
-if [ -f '/home/yoga/Downloads/google-cloud-sdk/completion.zsh.inc' ]; then . '/home/yoga/Downloads/google-cloud-sdk/completion.zsh.inc'; fi
-
+# Machine-specific config (tracked per-machine: stow zsh-pc / zsh-laptop)
+[[ -f ~/.config/zsh/machine.zsh ]] && source ~/.config/zsh/machine.zsh
+# Local secrets / work tooling (untracked)
 [[ -f ~/.zshrc.local ]] && source ~/.zshrc.local

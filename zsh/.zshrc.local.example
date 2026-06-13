@@ -1,0 +1,15 @@
+# ~/.zshrc.local — untracked machine-local secrets & private tooling.
+# Copy to ~/.zshrc.local and fill in your own values. NEVER commit the real file.
+#
+# This is sourced last by zsh/.zshrc. Use it for:
+#   - API keys / credentials
+#   - private/work-only helpers you don't want in a public repo
+#
+# Non-secret, machine-specific paths (conda root, gcloud, etc.) do NOT belong
+# here — put those in the tracked zsh-<machine> package instead.
+
+# export AMP_API_KEY="..."
+
+# add-work-dns() {
+#   sudo sed -i '0,/^nameserver/{s/^nameserver/nameserver 10.0.0.1\n&/}' /etc/resolv.conf
+# }
